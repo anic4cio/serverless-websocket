@@ -1,0 +1,28 @@
+{
+  "name": "gcf-slash-command",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lib/bolt.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc -m commonjs -t es2022 --esModuleInterop",
+    "start": "node -r dotenv/config lib/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.3.0",
+    "@slack/bolt": "^3.17.1",
+    "axios": "^1.6.5",
+    "dotenv": "^16.3.1",
+    "firebase-functions": "^4.6.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node20": "^20.1.2",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.8",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
