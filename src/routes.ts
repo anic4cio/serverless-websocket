@@ -1,5 +1,5 @@
 import { Application } from 'express'
-import SlackHandler from './slack-messager'
+import SlackHandler from './slackTextHandler'
 import axios from 'axios'
 
 const slackHandler = new SlackHandler(axios)
