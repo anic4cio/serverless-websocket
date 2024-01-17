@@ -1,9 +1,9 @@
 import { 
-  getListOfSlackFiles,
   ISlackFileListParams,
-  getFileFromSlack,
-  MockSlackFile
- } from "./slackFileGetter";
+  getTextFromSlackFile,
+  getListOfSlackFiles,
+  IRequestFile
+} from "./slackFileGetter"
 
 const channelId = process.env.CHANNEL_ID!
 const slackUser = process.env.SLACK_USER!
@@ -23,14 +23,14 @@ const slackUser = process.env.SLACK_USER!
   const filename = response[0].name
   const downloadFileUrl = response[0].url_private_download
 
-  const slackFile: MockSlackFile = {
+  const slackFile: IRequestFile = {
     files: [{
       url_private_download: downloadFileUrl,
       name: filename,
     }]
   }
 
-  await getFileFromSlack(slackFile)
-
+  const text = await getTextFromSlackFile(slackFile)
+  console.log(text)
 })()
 

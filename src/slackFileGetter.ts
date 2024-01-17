@@ -1,5 +1,5 @@
 import axios from 'axios'
-import fs from 'fs'
+import PDF from 'pdf-parse'
 
 const slackBotToken = process.env.SLACK_BOT_TOKEN!
 
@@ -48,46 +48,40 @@ interface SlackFileParams {
 }
 
 export interface ISlackFileListParams {
-  channel: string
-  count: number
-  show_files_hidden_by_limit: false
-  ts_from: string // files created this time and after only
-  types: 'pdfs'
-  user: string
+  channel: string // slack channel id
+  count: number // quantity of items to return
+  show_files_hidden_by_limit: boolean // show old files
+  ts_from: string // only files created this time and after
+  types: 'pdfs' // file type
+  user: string // slack user id
 }
 
-export interface MockSlackFile {
+export interface IRequestFile {
   files: {
     url_private_download: string,
     name: string,
   }[]
 }
 
-export const getFileFromSlack = async (slackFile: MockSlackFile) => {
-  const writer = fs.createWriteStream(`./${slackFile.files[0].name}.pdf`)
-  await axios({
+export const getTextFromSlackFile = async (slackFile: IRequestFile) => {
+  const slackFileBuffer = await getFileFromSlack(slackFile)
+  return await getTextFromSlackPDFBuffer(slackFileBuffer)
+}
+
+const getFileFromSlack = async (slackFile: IRequestFile) => {
+  const response = await axios({
     method: 'GET',
-    responseType: 'stream',
+    responseType: 'arraybuffer',
     baseURL: slackFile.files[0].url_private_download,
     headers: {
       'Authorization': `Bearer ${slackBotToken}`
     }
-  }).then(response => {
-    return new Promise((resolve, reject) => {
-      response.data.pipe(writer)
-      let error: Error
-      writer.on('error', err => {
-        error = err
-        writer.close()
-        reject(err)
-      })
-      writer.on('close', () => {
-        if (!error) {
-          resolve(true)
-        }
-      })
-    })
   })
+  return Buffer.from(response.data, 'utf-8')
+}
+
+const getTextFromSlackPDFBuffer = async (requestFileData: Buffer) => {
+  return PDF(requestFileData) .then(data => data.text)
 }
 
 export const getListOfSlackFiles = async (
@@ -101,6 +95,5 @@ export const getListOfSlackFiles = async (
       'Authorization': `Bearer ${slackBotToken}`
     }
   })
-
   return response.data.files
 }
