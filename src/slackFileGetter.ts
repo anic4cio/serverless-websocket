@@ -3,8 +3,8 @@ import PDF from 'pdf-parse'
 
 const slackBotToken = process.env.SLACK_BOT_TOKEN!
 const channelId = process.env.CHANNEL_ID!
-const slackUser = process.env.USER_ID! 
-  
+const slackUser = process.env.USER_ID!
+
 interface ISlackFileInfo {
   id: string,
   created: number,
@@ -49,51 +49,16 @@ interface IListFilesRequestParams {
   user: string // slack user id
 }
 
-export const getTextOfLastFileFromSlack = async () => {
-  const requestArgs = getArgsForFileRequest()
-  const responseWithfiles = await getListOfSlackFiles(requestArgs)
-  console.log(responseWithfiles)
-  // return getTextFromSlackFile(responseWithfiles)
-}
-
-const getArgsForFileRequest = () => {
-  const now = Date.now().toString()
-  console.log(now)
-  const reqParam: IListFilesRequestParams = {
-    channel: channelId,
-    count: 1,
-    show_files_hidden_by_limit: false,
-    ts_from: now,
-    types: 'pdf',
-    user: slackUser
-  }
-  return reqParam
-}
-
-const getListOfSlackFiles = async (
-  fileListParams: IListFilesRequestParams
-): Promise<ISlackFileInfo[]> => {
-  const response = await axios({
-    method: 'GET',
-    baseURL: 'https://slack.com/api/files.list',
-    params: fileListParams,
-    headers: {
-      'Authorization': `Bearer ${slackBotToken}`
-    }
-  })
-  return response.data.files
-}
-
-const getTextFromSlackFile = async (slackFile: ISlackFileInfo[]) => {
-  const slackFileBuffer = await getBufferFromDownloadURL(slackFile)
+export const getTextFromSlackFile = async (slackFileURL: string) => {
+  const slackFileBuffer = await getBufferFromDownloadURL(slackFileURL)
   return await getTextFromSlackPDFBuffer(slackFileBuffer)
 }
 
-const getBufferFromDownloadURL = async (slackFile: ISlackFileInfo[]) => {
+const getBufferFromDownloadURL = async (slackFileURL: string) => {
   const response = await axios({
     method: 'GET',
     responseType: 'arraybuffer',
-    baseURL: slackFile[0].url_private_download,
+    baseURL: slackFileURL,
     headers: {
       'Authorization': `Bearer ${slackBotToken}`
     }
@@ -102,5 +67,59 @@ const getBufferFromDownloadURL = async (slackFile: ISlackFileInfo[]) => {
 }
 
 const getTextFromSlackPDFBuffer = async (requestFileData: Buffer) => {
-  return PDF(requestFileData) .then(data => data.text)
+  return PDF(requestFileData).then(data => data.text)
+}
+
+export const sendFileToSlack = async (params: {
+  filedata: Buffer
+  filename: string
+}) => {
+  const { filedata, filename } = params
+  const res = await axios({
+    method: 'POST',
+    baseURL: 'https://slack.com/api/files.upload',
+    params: {
+      channels: channelId,
+      content: filedata,
+      filetype: 'json',
+      title: filename
+    },
+    headers: {
+      'Authorization': `Bearer ${slackBotToken}`
+    }
+  })
+  return res.data
+}
+
+export const sendMessageToSlack = async (params: {
+  msg: string
+  ts: string
+}) => {
+  const { msg, ts } = params
+  const res = await axios({
+    method: 'POST',
+    baseURL: 'https://slack.com/api/chat.postMessage',
+    params: {
+      text: msg,
+      thread_ts: ts
+    },
+    headers: {
+      'Authorization': `Bearer ${slackBotToken}`
+    }
+  })
+  return res.data
+}
+
+export const sendJSONToSlack = async (json: Object) => {
+  const res = await axios({
+    method: 'POST',
+    baseURL: 'https://slack.com/api/chat.postMessage',
+    params: {
+      blocks: json,
+    },
+    headers: {
+      'Authorization': `Bearer ${slackBotToken}`
+    }
+  })
+  return res.data
 }
