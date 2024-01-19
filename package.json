@@ -2,7 +2,7 @@
   "name": "gcf-slash-command",
   "version": "1.0.0",
   "description": "",
-  "main": "lib/bolt.js",
+  "main": "lib/index.js",
   "type": "commonjs",
   "scripts": {
     "build": "tsc -m commonjs -t es2022 --esModuleInterop",
@@ -13,10 +13,8 @@
   "license": "ISC",
   "dependencies": {
     "@google-cloud/functions-framework": "^3.3.0",
-    "@slack/bolt": "^3.17.1",
     "axios": "^1.6.5",
     "dotenv": "^16.3.1",
-    "firebase-functions": "^4.6.0",
     "pdf-parse": "^1.1.1"
   },
   "devDependencies": {
