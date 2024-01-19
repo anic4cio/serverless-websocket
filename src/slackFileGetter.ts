@@ -3,19 +3,8 @@ import PDF from 'pdf-parse'
 
 const slackBotToken = process.env.SLACK_BOT_TOKEN!
 const channelId = process.env.CHANNEL_ID!
-const slackUser = process.env.SLACK_USER!
-
-// interface ISlackResWithFile {
-//   ok: boolean,
-//   files: ISlackFileInfo[],
-//   paging: {
-//     count: number,
-//     total: number,
-//     page: number,
-//     pages: number
-//   }
-// }
-
+const slackUser = process.env.USER_ID! 
+  
 interface ISlackFileInfo {
   id: string,
   created: number,
@@ -43,6 +32,7 @@ interface ISlackFileInfo {
   thumb_pdf_w: number,
   thumb_pdf_h: number,
   permalink: string,
+  permalink_public: string,
   channels: string[],
   groups: [],
   ims: [],
@@ -55,7 +45,7 @@ interface IListFilesRequestParams {
   show_files_hidden_by_limit: boolean // show old files
   ts_from?: string // only files created this time and after
   ts_to?: string
-  types: 'pdfs' // file type
+  types: 'pdf' // file type
   user: string // slack user id
 }
 
@@ -72,10 +62,9 @@ const getArgsForFileRequest = () => {
   const reqParam: IListFilesRequestParams = {
     channel: channelId,
     count: 1,
-    show_files_hidden_by_limit: true,
+    show_files_hidden_by_limit: false,
     ts_from: now,
-    // ts_to: now,
-    types: 'pdfs',
+    types: 'pdf',
     user: slackUser
   }
   return reqParam
