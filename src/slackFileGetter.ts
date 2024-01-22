@@ -3,9 +3,8 @@ import PDF from 'pdf-parse'
 
 const slackBotToken = process.env.SLACK_BOT_TOKEN!
 const channelId = process.env.CHANNEL_ID!
-const slackUser = process.env.USER_ID!
 
-interface ISlackFileInfo {
+export interface ISlackFileInfo {
   id: string,
   created: number,
   timestamp: number,
@@ -33,21 +32,16 @@ interface ISlackFileInfo {
   thumb_pdf_h: number,
   permalink: string,
   permalink_public: string,
-  channels: string[],
-  groups: [],
-  ims: [],
-  comments_count: 0
+  channels?: string[],
+  groups?: [],
+  ims?: [],
+  comments_count?: 0
+  is_starred?: boolean,
+  has_rich_preview?: boolean,
+  file_access?: string
 }
 
-interface IListFilesRequestParams {
-  channel: string // slack channel id
-  count: number // quantity of items to return
-  show_files_hidden_by_limit: boolean // show old files
-  ts_from?: string // only files created this time and after
-  ts_to?: string
-  types: 'pdf' // file type
-  user: string // slack user id
-}
+type SlackFileType = string | Buffer | ArrayBufferLike | ArrayLike<object> | Array<unknown>
 
 export const getTextFromSlackFile = async (slackFileURL: string) => {
   const slackFileBuffer = await getBufferFromDownloadURL(slackFileURL)
@@ -71,24 +65,26 @@ const getTextFromSlackPDFBuffer = async (requestFileData: Buffer) => {
 }
 
 export const sendFileToSlack = async (params: {
-  filedata: Buffer
+  filedata: SlackFileType
   filename: string
+  filetype: string
+  timestamp?: string
 }) => {
-  const { filedata, filename } = params
-  const res = await axios({
+  const { filedata, filename, filetype, timestamp } = params
+  await axios({
     method: 'POST',
     baseURL: 'https://slack.com/api/files.upload',
     params: {
       channels: channelId,
+      thread_ts: timestamp,
       content: filedata,
-      filetype: 'json',
+      filetype,
       title: filename
     },
     headers: {
       'Authorization': `Bearer ${slackBotToken}`
     }
   })
-  return res.data
 }
 
 export const sendMessageToSlack = async (params: {
@@ -96,7 +92,7 @@ export const sendMessageToSlack = async (params: {
   ts: string
 }) => {
   const { msg, ts } = params
-  const res = await axios({
+  await axios({
     method: 'POST',
     baseURL: 'https://slack.com/api/chat.postMessage',
     params: {
@@ -107,19 +103,29 @@ export const sendMessageToSlack = async (params: {
       'Authorization': `Bearer ${slackBotToken}`
     }
   })
-  return res.data
 }
 
-export const sendJSONToSlack = async (json: Object) => {
-  const res = await axios({
+export const sendOkToSlack = async (ts?: string) => {
+  await axios({
     method: 'POST',
     baseURL: 'https://slack.com/api/chat.postMessage',
     params: {
-      blocks: json,
+      code: 200,
+      json: {
+        response_type: 'in_channel',
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: '*Processando...*.',
+            },
+          },
+        ],
+      },
     },
     headers: {
       'Authorization': `Bearer ${slackBotToken}`
     }
   })
-  return res.data
 }
