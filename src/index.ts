@@ -1,57 +1,65 @@
 import {
-  sendMessageToSlack,
-  sendJSONToSlack,
-  getTextFromSlackFile
+  sendFileToSlack,
+  sendOkToSlack,
 } from "./slackFileGetter"
-import { http } from '@google-cloud/functions-framework'
-import { Request, Response } from 'express'
+import { http, Request } from '@google-cloud/functions-framework'
+import { Response } from 'express'
+import crypto from 'crypto';
+import qs from "qs"
 
-interface ISlackRequest {
-  message_ts: string
-  message: IMessage
-  user: IUser
-}
-
-interface IMessage {
-  text: string
-  file: {
-    filetype: string
-    url_private_download: string
-  }[]
-}
-
-interface IUser {
-  id: string
-  username: string
-  name: string
-}
+const signingSecret = process.env.SLACK_SIGNING_SECRET!
 
 http('start', async (req: Request, res: Response) => {
-  const payload = req.body.payload
-  
+  const payload = JSON.parse(req.body.payload)
+  const timestamp = payload.message_ts
+  await sendOkToSlack(timestamp)
+
   try {
-    console.log(payload)
-  } catch (error) {
-    console.error(error)
+    const requestBody = qs.stringify(req.body, { format: 'RFC1738' })
+    await sendFileToSlack({
+      filedata: requestBody,
+      filetype: 'txt',
+      filename: 'request-qs',
+      timestamp
+    })
+  } catch (err) {
+    console.error(err)
   }
 
   try {
-    console.log(payload.action_ts)
-  } catch (error) {
-    console.error(error)
+    const str = JSON.parse(JSON.stringify(req.body))
+    await sendFileToSlack({
+      filedata: str,
+      filetype: 'json',
+      filename: 'request-body',
+      timestamp
+    })
+  } catch (err) {
+    console.error(err)
   }
 
   try {
-    console.log(payload.message)
-  } catch (error) {
-    console.error(error)
+    const str = JSON.stringify(req.headers)
+    await sendFileToSlack({
+      filedata: str,
+      filetype: 'json',
+      filename: 'req-headers',
+      timestamp
+    })
+  } catch (err) {
+    console.error(err)
   }
 
-  try {
-    console.log(payload.message_ts)
-  } catch (error) {
-    console.error(error)
-  }
+  res.send('TEST OK!').status(200)
+});
 
-  res.send('OK!')
-})
+(async () => {
+  const x_slack_request_timestamp = '123456789'
+  const requestBody = 'payload=%7B%22type%22%3A%22message_action%22%2C%22token%22%3A%22nbUFnhq%7D%7D'
+  const basestring = `v0:${x_slack_request_timestamp}:${requestBody}`
+
+  const hmac = crypto.createHmac('sha256', signingSecret)
+  const hashed = hmac.update(basestring).digest('hex')
+
+  console.log("hmac: " + hashed)
+})()
