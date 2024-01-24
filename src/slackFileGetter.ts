@@ -97,7 +97,8 @@ export const sendMessageToSlack = async (params: {
     baseURL: 'https://slack.com/api/chat.postMessage',
     params: {
       text: msg,
-      thread_ts: ts
+      thread_ts: ts,
+      channel: channelId
     },
     headers: {
       'Authorization': `Bearer ${slackBotToken}`
@@ -110,19 +111,17 @@ export const sendOkToSlack = async (ts?: string) => {
     method: 'POST',
     baseURL: 'https://slack.com/api/chat.postMessage',
     params: {
-      code: 200,
-      json: {
-        response_type: 'in_channel',
-        blocks: [
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text: '*Processando...*.',
-            },
+      response_type: 'in_channel',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: '*Processando...*.',
           },
-        ],
-      },
+        },
+      ],
+      thread_ts: ts,
     },
     headers: {
       'Authorization': `Bearer ${slackBotToken}`
