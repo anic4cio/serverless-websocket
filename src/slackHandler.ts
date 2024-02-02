@@ -48,6 +48,10 @@ export const getTextFromSlackFile = async (slackFileURL: string) => {
   return await getTextFromSlackPDFBuffer(slackFileBuffer)
 }
 
+const getTextFromSlackPDFBuffer = async (requestFileData: Buffer) => {
+  return PDF(requestFileData).then(data => data.text)
+}
+
 const getBufferFromDownloadURL = async (slackFileURL: string) => {
   const response = await axios({
     method: 'GET',
@@ -60,31 +64,27 @@ const getBufferFromDownloadURL = async (slackFileURL: string) => {
   return Buffer.from(response.data, 'utf-8')
 }
 
-const getTextFromSlackPDFBuffer = async (requestFileData: Buffer) => {
-  return PDF(requestFileData).then(data => data.text)
-}
-
 export const sendFileToSlack = async (params: {
   filedata: SlackFileType
   filename: string
-  filetype: string
-  timestamp?: string
+  ts?: string
 }) => {
-  const { filedata, filename, filetype, timestamp } = params
-  await axios({
+  const { filedata, filename, ts } = params
+  const res = await axios({
     method: 'POST',
     baseURL: 'https://slack.com/api/files.upload',
     params: {
       channels: channelId,
-      thread_ts: timestamp,
+      thread_ts: ts,
       content: filedata,
-      filetype,
+      filetype: 'json', // text, pdf
       title: filename
     },
     headers: {
-      'Authorization': `Bearer ${slackBotToken}`
+      Authorization: `Bearer ${slackBotToken}`
     }
   })
+  return res
 }
 
 export const sendMessageToSlack = async (params: {
