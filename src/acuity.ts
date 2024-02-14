@@ -21,6 +21,12 @@ interface IAcuityAppts {
   "Appointment ID": string
 }
 
+interface IJudgeApptsInfo {
+  internal: number
+  external: number
+  absent: number
+}
+
 const getApptsByJudge = (params: {
   apptsFromFile: IAcuityAppts[]
   judgeRegex: RegExp
@@ -49,7 +55,7 @@ const getInvalidAppts = (params: {
   )
 }
 
-const filterByExternals = (params: {
+const filterByExternal = (params: {
   validApptsByJudge: IAcuityAppts[]
 }) => {
   const { validApptsByJudge } = params
@@ -58,33 +64,44 @@ const filterByExternals = (params: {
   )
 }
 
-const regexNina = /Nina/gi
-const regexGermano = /Germano/gi
-const regexCristina = /Cristina/gi
+const filterByInternal = (params: {
+  validApptsByJudge: IAcuityAppts[]
+}) => {
+  const { validApptsByJudge } = params
+  return validApptsByJudge.filter(appt =>
+    appt['Type'].match(/casamento\s+interno/gi)
+  )
+}
 
+const getApptsInfoPerJudge = (params: {
+  judgeAppts: IAcuityAppts[]
+}): IJudgeApptsInfo => {
+  const { judgeAppts } = params
+  const validJudgeAppts = getMarkedValidAppts({ judgeAppts })
+  const internal = filterByInternal({ validApptsByJudge: validJudgeAppts })
+  const external = filterByExternal({ validApptsByJudge: validJudgeAppts })
+  const absent = getInvalidAppts({ judgeAppts: judgeAppts })
+  return {
+    internal: internal.length,
+    external: external.length,
+    absent: absent.length
+  }
+}
 
-const filepath = './schedule2024-02-07.csv';
-(async () => {
-  const apptsArray: IAcuityAppts[] = await csv().fromFile(filepath)
+;(async () => {
+  const regexNina = /Nina/gi
+  const regexGermano = /Germano/gi
+  const regexCristina = /Cristina/gi
+  const filepath = './schedule2024-02-07.csv';
 
-  const apptByJudge = getApptsByJudge({
-    apptsFromFile: apptsArray,
-    judgeRegex: regexNina
-  })
-  console.log(apptByJudge.length)
+  const apptsFromFile: IAcuityAppts[] = await csv().fromFile(filepath)
 
-  const validApptsByJudge = getMarkedValidAppts({ judgeAppts: apptByJudge })
-  console.log(validApptsByJudge.length)
+  const judgeAppts = getApptsByJudge({ apptsFromFile, judgeRegex: regexGermano })
 
-  const invalid = getInvalidAppts({ judgeAppts: apptByJudge })
-  console.log(invalid.length)
-
-  const externs = filterByExternals({ validApptsByJudge: apptByJudge })
-  console.log(externs.length)
-
+  const info = getApptsInfoPerJudge({ judgeAppts })
+  console.log(info)
 })()
 
-// judge    | total appts | valid appts | invalid | externals
-// germano  |     66      |     66      |    0    |    1
-// cristina |     185     |     182     |    2    |    9
-// nina     |     183     |     181     |    2    |    1
+// germano: { internal: 65, external: 1, absent: 0 }
+// cristina: { internal: 173, external: 9, absent: 2 }
+// nina: { internal: 180, external: 1, absent: 2 }
