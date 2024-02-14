@@ -37,12 +37,21 @@ const getApptsByJudge = (params: {
   )
 }
 
-const getMarkedValidAppts = (params: {
+const getMarkedValidAppts = (params: { // only appts with "A-" but WITHOUT (substituition)
   judgeAppts: IAcuityAppts[]
 }) => {
   const { judgeAppts } = params
   return judgeAppts.filter(appt =>
     appt['First Name'].match(/A-/g)
+  )
+}
+
+const catchSubstitutedAppts = (params: {
+  validJudgeAppts: IAcuityAppts[]
+}) => {
+  const { validJudgeAppts } = params
+  return validJudgeAppts.filter(appt =>
+    appt['First Name'].match(/\(\w+\)\s+A-/g)
   )
 }
 
@@ -103,5 +112,7 @@ const getApptsInfoPerJudge = (params: {
 })()
 
 // germano: { internal: 65, external: 1, absent: 0 }
+
 // cristina: { internal: 173, external: 9, absent: 2 }
+
 // nina: { internal: 180, external: 1, absent: 2 }
