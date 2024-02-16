@@ -1,19 +1,7 @@
 import { initializeApp, cert } from 'firebase-admin/app'
-import { getFirestore, initializeFirestore } from 'firebase-admin/firestore'
+import { initializeFirestore } from 'firebase-admin/firestore'
 
-const serviceAccount = require('../firestore-local-credentials.json')
-
-const app = initializeApp({
-  credential: cert(serviceAccount)
-})
-
-const firestoreCollection = 'new-collection'
-
-// const getDatabase = () => {
-//   const firestoreDb = getFirestore()
-//   const firestoreCollection = 'new-collection'
-//   return firestoreDb.collection(firestoreCollection)
-// }
+const serviceAccount = require('../firebase-credential.json')
 
 const getDatabase = () => {
   const firestoreDb = initializeFirestore(app, { preferRest: true })
@@ -26,9 +14,34 @@ const checkDocumentExistence = async (document: string) => {
   return docRef.exists
 }
 
-const firestoreDocument = 'doc132';
+const app = initializeApp({
+  credential: cert(serviceAccount)
+})
 
-(async () => {
-  const snapshot = await checkDocumentExistence('any')
-  console.log(snapshot)
-})()
+export interface IStoredTokens {
+  accessToken: string
+  refreshToken: string
+  authorizationCode?: string
+  expiresIn: number
+}
+
+const firestoreCollection = 'ca-tokens-database'
+const firestoreDocument = 'ca-tokens'
+
+const tokensDocRef = initializeFirestore(app, { preferRest: true })
+  .collection(firestoreCollection)
+  .doc(firestoreDocument)
+
+const getAuthData = async () => {
+  const documentFields = await tokensDocRef.get()
+  const accessToken = documentFields.get('accessToken')
+  const refreshToken = documentFields.get('refreshToken')
+  const authorizationCode = documentFields.get('authorizationCode')
+  const expiresIn = documentFields.get('expiresIn')
+  return {
+    accessToken,
+    refreshToken,
+    authorizationCode,
+    expiresIn
+  }
+}
